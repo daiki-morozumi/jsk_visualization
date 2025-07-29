@@ -98,7 +98,7 @@ protected:
   // return true if plugin needs to animate
   bool isAnimating();
   double animationRate();
-  std::string statusText();
+  std::string nameText();
   std::mutex mutex_;
   OverlayObject::Ptr overlay_;
 
@@ -118,6 +118,7 @@ protected:
   int top_, left_;
   double t_;
   double stall_duration_;
+  std::string  name_;
   bool is_animating_;
   rviz_common::properties::EditableEnumProperty * diagnostics_namespace_property_;
   rviz_common::properties::EnumProperty * type_property_;
@@ -126,6 +127,7 @@ protected:
   rviz_common::properties::FloatProperty * alpha_property_;
   rviz_common::properties::IntProperty * size_property_;
   rviz_common::properties::FloatProperty * stall_duration_property_;
+  rviz_common::properties::StringProperty * name_property_;
 
 protected Q_SLOTS:
   void updateType();
@@ -136,6 +138,7 @@ protected Q_SLOTS:
   void updateTop();
   void updateLeft();
   void updateStallDuration();
+  void updateName();
 
 private:
 };

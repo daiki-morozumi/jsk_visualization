@@ -51,7 +51,7 @@
 
 namespace jsk_rviz_plugins
 {
-const double overlay_diagnostic_animation_duration = 5.0;
+const double overlay_diagnostic_animation_duration = 15.0;
 const double overlay_diagnostic_animation_transition_duration = 0.2;
 OverlayDiagnosticDisplay::OverlayDiagnosticDisplay()
 : previous_state_(STALL_STATE), clock_(RCL_SYSTEM_TIME)
@@ -77,6 +77,8 @@ OverlayDiagnosticDisplay::OverlayDiagnosticDisplay()
   stall_duration_property_ = new rviz_common::properties::FloatProperty(
     "stall duration", 5.0, "seconds to be regarded as stalled", this, SLOT(updateStallDuration()));
   stall_duration_property_->setMin(0.0);
+  name_property_ = new rviz_common::properties::StringProperty(
+    "name", "no name", "name", this, SLOT(updateName()));
 }
 
 OverlayDiagnosticDisplay::~OverlayDiagnosticDisplay()
@@ -92,6 +94,7 @@ OverlayDiagnosticDisplay::~OverlayDiagnosticDisplay()
   delete alpha_property_;
   delete size_property_;
   delete type_property_;
+  delete name_property_;
 }
 
 void OverlayDiagnosticDisplay::reset() { RTDClass::reset(); }
@@ -223,6 +226,7 @@ void OverlayDiagnosticDisplay::onInitialize()
   updateTop();
   updateStallDuration();
   updateRosTopic();
+  updateName();
 }
 
 bool OverlayDiagnosticDisplay::isStalled()
@@ -239,25 +243,9 @@ bool OverlayDiagnosticDisplay::isStalled()
   }
 }
 
-std::string OverlayDiagnosticDisplay::statusText()
+std::string OverlayDiagnosticDisplay::nameText()
 {
-  if (latest_status_) {
-    if (!isStalled()) {
-      if (latest_status_->level == diagnostic_msgs::msg::DiagnosticStatus::OK) {
-        return "OK";
-      } else if (latest_status_->level == diagnostic_msgs::msg::DiagnosticStatus::WARN) {
-        return "WARN";
-      } else if (latest_status_->level == diagnostic_msgs::msg::DiagnosticStatus::ERROR) {
-        return "ERROR";
-      } else {
-        return "UNKNOWN";
-      }
-    } else {
-      return "UNKNOWN";
-    }
-  } else {
-    return "UNKNOWN";
-  }
+  return name_;
 }
 
 OverlayDiagnosticDisplay::State OverlayDiagnosticDisplay::getLatestState()
@@ -283,7 +271,7 @@ OverlayDiagnosticDisplay::State OverlayDiagnosticDisplay::getLatestState()
 
 QColor OverlayDiagnosticDisplay::foregroundColor()
 {
-  QColor ok_color(25, 255, 240, alpha_ * 255.0);
+  QColor ok_color(25, 255, 240, alpha_ * 7.0);
   QColor warn_color(240, 173, 78, alpha_ * 255.0);
   QColor error_color(217, 83, 79, alpha_ * 255.0);
   QColor stall_color(151, 151, 151, alpha_ * 255.0);
@@ -302,7 +290,7 @@ QColor OverlayDiagnosticDisplay::foregroundColor()
 
 QColor OverlayDiagnosticDisplay::textColor()
 {
-  QColor ok_color(40, 40, 40, alpha_ * 255.0);
+  QColor ok_color(40, 40, 40, alpha_ * 7.0);
   QColor warn_color(255, 255, 255, alpha_ * 255.0);
   QColor error_color(240, 173, 78, alpha_ * 255.0);
   QColor stall_color(240, 173, 78, alpha_ * 255.0);
@@ -323,7 +311,7 @@ QColor OverlayDiagnosticDisplay::blendColor(QColor a, QColor b, double a_rate)
 {
   QColor ret(
     a.red() * a_rate + b.red() * (1 - a_rate), a.green() * a_rate + b.green() * (1 - a_rate),
-    a.blue() * a_rate + b.blue() * (1 - a_rate), a.alpha() * a_rate + b.alpha() * (1 - a_rate));
+    a.blue() * a_rate + b.blue() * (1 - a_rate), a.alpha());
   return ret;
 }
 
@@ -331,7 +319,7 @@ double OverlayDiagnosticDisplay::textWidth(
   QPainter & painter, double font_size, const std::string & text)
 {
   painter.save();
-  const double r = size_ / 128.0;
+  const double r = size_ / 96.0;
   QFont font("Liberation Sans", font_size * r, font_size * r, QFont::Bold);
   QPen pen;
   QPainterPath path;
@@ -348,7 +336,7 @@ double OverlayDiagnosticDisplay::textWidth(
 double OverlayDiagnosticDisplay::textHeight(QPainter & painter, double font_size)
 {
   painter.save();
-  const double r = size_ / 128.0;
+  const double r = size_ / 96.0;
   QFont font("Liberation Sans", font_size * r, font_size * r, QFont::Bold);
   QPen pen;
   QPainterPath path;
@@ -365,7 +353,7 @@ double OverlayDiagnosticDisplay::drawAnimatingText(
   QPainter & painter, QColor fg_color, const double height, const double font_size,
   const std::string text)
 {
-  const double r = size_ / 128.0;
+  const double r = size_ / 96.0;
   QFont font("Liberation Sans", font_size * r, font_size * r, false);
   QPen pen;
   QPainterPath path;
@@ -393,7 +381,7 @@ void OverlayDiagnosticDisplay::drawText(
   QPainter & painter, QColor fg_color, const std::string & text)
 {
   double status_size =
-    drawAnimatingText(painter, fg_color, overlay_->getTextureHeight() / 3.0, 20, text);
+    drawAnimatingText(painter, fg_color, overlay_->getTextureHeight() / 3.0, 15, text);
   double namespace_size = drawAnimatingText(
     painter, fg_color, overlay_->getTextureHeight() / 3.0 + status_size, 10,
     diagnostics_namespace_);
@@ -433,7 +421,7 @@ void OverlayDiagnosticDisplay::drawSAC(QImage & Hud)
     fmod(t_, overlay_diagnostic_animation_duration) / overlay_diagnostic_animation_duration * 360;
   const double draw_angle = 250;
   const double inner_circle_start = line_width + margin + inner_line_width / 2.0;
-  drawText(painter, fg_color, statusText());
+    drawText(painter, fg_color, nameText());
 }
 
 void OverlayDiagnosticDisplay::drawEVAConnectedRectangle(
@@ -534,25 +522,25 @@ void OverlayDiagnosticDisplay::drawEVA(QImage & Hud)
         painter, rectangle_color, small_rectangle_color, line_width, max_gap);
     }
   }
-  painter.setPen(QPen(textColor(), 2 * line_width, Qt::SolidLine));
-  painter.setFont(QFont("Liberation Sans", 12, QFont::Bold));
-  double theta = atan2(S - B, S - A) / M_PI * 180;
-  double text_box_height = cos(theta * M_PI / 180) * B;
-  double text_box_width = (S - A) / cos(theta * M_PI / 180) - sin(theta * M_PI / 180) * B * 2;
-  double text_width = textWidth(painter, 12, diagnostics_namespace_);
+    painter.setPen(QPen(textColor(), 2 * line_width, Qt::SolidLine));
+    painter.setFont(QFont("Liberation Sans", 12, QFont::Bold));
+    double theta = atan2(S - B, S - A) / M_PI * 180;
+    double text_box_height = cos(theta * M_PI / 180) * B;
+    double text_box_width = (S - A) / cos(theta * M_PI / 180) - sin(theta * M_PI / 180) * B * 2;
+    double text_width = textWidth(painter, 12, diagnostics_namespace_);
 
-  painter.translate(A, S - B);
-  painter.rotate(-theta);
-  if (text_width > text_box_width) {
-    double text_left = -fmod(t_, overlay_diagnostic_animation_duration) /
-                       overlay_diagnostic_animation_duration * text_width;
-    painter.drawText(
-      QRectF(text_left, 0, text_width * 2, text_box_height),
-      Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, diagnostics_namespace_.c_str());
-  } else {
-    painter.drawText(
-      QRectF(0, 0, text_box_width, text_box_height),
-      Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, diagnostics_namespace_.c_str());
+    painter.translate(A, S - B);
+    painter.rotate(-theta);
+    if (text_width > text_box_width) {
+      double text_left = -fmod(t_, overlay_diagnostic_animation_duration) /
+                        overlay_diagnostic_animation_duration * text_width;
+      painter.drawText(
+        QRectF(text_left, 0, text_width * 2, text_box_height),
+        Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, diagnostics_namespace_.c_str());
+    } else {
+      painter.drawText(
+        QRectF(0, 0, text_box_width, text_box_height),
+        Qt::AlignLeft | Qt::AlignVCenter | Qt::TextSingleLine, diagnostics_namespace_.c_str());
   }
 }
 
@@ -603,6 +591,8 @@ void OverlayDiagnosticDisplay::updateStallDuration()
 {
   stall_duration_ = stall_duration_property_->getFloat();
 }
+
+void OverlayDiagnosticDisplay::updateName() { name_ = name_property_->getStdString(); }
 
 bool OverlayDiagnosticDisplay::isInRegion(int x, int y)
 {
