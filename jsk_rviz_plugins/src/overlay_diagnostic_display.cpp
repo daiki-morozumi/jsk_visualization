@@ -271,7 +271,7 @@ OverlayDiagnosticDisplay::State OverlayDiagnosticDisplay::getLatestState()
 
 QColor OverlayDiagnosticDisplay::foregroundColor()
 {
-  QColor ok_color(25, 255, 240, alpha_ * 7.0);
+  QColor ok_color(0, 180, 180, alpha_ * 7.0);
   QColor warn_color(240, 173, 78, alpha_ * 255.0);
   QColor error_color(217, 83, 79, alpha_ * 255.0);
   QColor stall_color(151, 151, 151, alpha_ * 255.0);
