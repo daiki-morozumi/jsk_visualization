@@ -38,6 +38,8 @@
 
 #include <chrono>
 #include <iomanip>
+#include <QProcess>
+#include <QString>
 #include <rclcpp/duration.hpp>
 #include <rviz_common/display_context.hpp>
 #include <rviz_common/render_panel.hpp>
@@ -80,6 +82,22 @@ OverlayDiagnosticDisplay::OverlayDiagnosticDisplay()
   name_property_ = new rviz_common::properties::StringProperty(
     "name", "no name", "name", this, SLOT(updateName()));
 }
+
+void OverlayDiagnosticDisplay::speakText(const std::string &text)
+{
+  if (text.empty()) return;
+
+  QString qtext = QString::fromStdString(text);
+
+  QStringList symbols = {":", ";", "!", "?", ",", ".", "_", "-", "/"};
+  for (const QString &sym : symbols) {
+    qtext.replace(sym, " ");
+  }
+
+  QString command = "espeak \"" + qtext.trimmed() + "\"";
+  QProcess::startDetached(command);
+}
+
 
 OverlayDiagnosticDisplay::~OverlayDiagnosticDisplay()
 {
@@ -159,6 +177,8 @@ void OverlayDiagnosticDisplay::update(float wall_dt, float ros_dt)
   }
   t_ += wall_dt;
 
+  OverlayDiagnosticDisplay::State current_state = getLatestState();
+
   // check if the widget should animate
   if (!is_animating_) {
     if (previous_state_ != getLatestState()) {
@@ -168,6 +188,11 @@ void OverlayDiagnosticDisplay::update(float wall_dt, float ros_dt)
   } else {
     if (!isAnimating()) {  // animation time is over
       is_animating_ = false;
+      if (current_state == WARN_STATE || current_state == ERROR_STATE) {
+        if (latest_status_) {
+          speakText(latest_status_->message);  // DiagnosticStatus.messageを読み上げ
+        }
+      }
       previous_state_ = getLatestState();
     }
   }

@@ -95,6 +95,7 @@ protected:
   double drawAnimatingText(
     QPainter & painter, QColor fg_color, const double height, const double font_size,
     const std::string text);
+  void speakText(const std::string &text);
   // return true if plugin needs to animate
   bool isAnimating();
   double animationRate();
