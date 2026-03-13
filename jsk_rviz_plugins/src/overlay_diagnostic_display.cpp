@@ -91,7 +91,7 @@ void OverlayDiagnosticDisplay::speakText(const std::string &text)
 
   QStringList symbols = {":", ";", "!", "?", ",", ".", "_", "-", "/"};
   for (const QString &sym : symbols) {
-    qtext.replace(sym, " ");
+    qtext.replace(sym, ". . ");
   }
 
   QString command = "espeak \"" + qtext.trimmed() + "\"";
