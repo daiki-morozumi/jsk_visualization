@@ -167,6 +167,46 @@ ScopedPixelBuffer OverlayObject::getBuffer()
 
 void OverlayObject::setPosition(double left, double top) { panel_->setPosition(left, top); }
 
+void OverlayObject::setPosition(
+  double horizontal_distance, double vertical_distance,
+  HorizontalAlignment horizontal_alignment, VerticalAlignment vertical_alignment)
+{
+  double left = 0;
+  double top = 0;
+
+  switch (horizontal_alignment) {
+    case HorizontalAlignment::LEFT:
+      panel_->setHorizontalAlignment(Ogre::GuiHorizontalAlignment::GHA_LEFT);
+      left = horizontal_distance;
+      break;
+    case HorizontalAlignment::CENTER:
+      panel_->setHorizontalAlignment(Ogre::GuiHorizontalAlignment::GHA_CENTER);
+      left = horizontal_distance - panel_->getWidth() / 2;
+      break;
+    case HorizontalAlignment::RIGHT:
+      panel_->setHorizontalAlignment(Ogre::GuiHorizontalAlignment::GHA_RIGHT);
+      left = -horizontal_distance - panel_->getWidth();
+      break;
+  }
+
+  switch (vertical_alignment) {
+    case VerticalAlignment::BOTTOM:
+      panel_->setVerticalAlignment(Ogre::GuiVerticalAlignment::GVA_BOTTOM);
+      top = -vertical_distance - panel_->getHeight();
+      break;
+    case VerticalAlignment::CENTER:
+      panel_->setVerticalAlignment(Ogre::GuiVerticalAlignment::GVA_CENTER);
+      top = vertical_distance - panel_->getHeight() / 2;
+      break;
+    case VerticalAlignment::TOP:
+      panel_->setVerticalAlignment(Ogre::GuiVerticalAlignment::GVA_TOP);
+      top = vertical_distance;
+      break;
+  }
+
+  panel_->setPosition(left, top);
+}
+
 void OverlayObject::setDimensions(double width, double height)
 {
   panel_->setDimensions(width, height);

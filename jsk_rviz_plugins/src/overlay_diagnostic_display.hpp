@@ -117,14 +117,20 @@ protected:
   std::set<std::string> namespaces_;
   double alpha_;
   int top_, left_;
+  int mHorizontalDistance;
+  int mVerticalDistance;
+  HorizontalAlignment mHorizontalAlignment;
+  VerticalAlignment mVerticalAlignment;
   double t_;
   double stall_duration_;
   std::string  name_;
   bool is_animating_;
   rviz_common::properties::EditableEnumProperty * diagnostics_namespace_property_;
   rviz_common::properties::EnumProperty * type_property_;
-  rviz_common::properties::IntProperty * top_property_;
-  rviz_common::properties::IntProperty * left_property_;
+  rviz_common::properties::IntProperty * mpHorizontalDistanceProperty;
+  rviz_common::properties::IntProperty * mpVerticalDistanceProperty;
+  rviz_common::properties::EnumProperty * mpHorizontalAlignmentProperty;
+  rviz_common::properties::EnumProperty * mpVerticalAlignmentProperty;
   rviz_common::properties::FloatProperty * alpha_property_;
   rviz_common::properties::IntProperty * size_property_;
   rviz_common::properties::FloatProperty * stall_duration_property_;
@@ -136,8 +142,10 @@ protected Q_SLOTS:
   void updateDiagnosticsNamespace();
   void updateSize();
   void updateAlpha();
-  void updateTop();
-  void updateLeft();
+  void updateHorizontalDistance();
+  void updateVerticalDistance();
+  void updateHorizontalAlignment();
+  void updateVerticalAlignment();
   void updateStallDuration();
   void updateName();
 

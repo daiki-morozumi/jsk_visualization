@@ -45,6 +45,7 @@
 #include <rviz_common/render_panel.hpp>
 #include <rviz_common/uniform_string_stream.hpp>
 #include <rviz_common/view_manager.hpp>
+#include <rviz_rendering/render_system.hpp>
 
 #include "rviz_common/logging.hpp"
 #include "rviz_common/msg_conversions.hpp"
@@ -65,10 +66,23 @@ OverlayDiagnosticDisplay::OverlayDiagnosticDisplay()
     "type", "SAC", "Type of visualization", this, SLOT(updateType()));
   type_property_->addOptionStd("SAC", 0);
   type_property_->addOptionStd("EVA", 1);
-  top_property_ =
-    new rviz_common::properties::IntProperty("top", 128, "top positoin", this, SLOT(updateTop()));
-  left_property_ = new rviz_common::properties::IntProperty(
-    "left", 128, "left positoin", this, SLOT(updateLeft()));
+  mpHorizontalDistanceProperty = new rviz_common::properties::IntProperty(
+    "HorizontalDistance", 128, "horizontal distance to anchor", this,
+    SLOT(updateHorizontalDistance()));
+  mpVerticalDistanceProperty = new rviz_common::properties::IntProperty(
+    "VerticalDistance", 128, "vertical distance to anchor", this,
+    SLOT(updateVerticalDistance()));
+  mpHorizontalAlignmentProperty = new rviz_common::properties::EnumProperty(
+    "HorizontalAlignment", "LEFT", "Horizontal Alignment", this,
+    SLOT(updateHorizontalAlignment()));
+  mpHorizontalAlignmentProperty->addOption("LEFT", (int)HorizontalAlignment::LEFT);
+  mpHorizontalAlignmentProperty->addOption("CENTER", (int)HorizontalAlignment::CENTER);
+  mpHorizontalAlignmentProperty->addOption("RIGHT", (int)HorizontalAlignment::RIGHT);
+  mpVerticalAlignmentProperty = new rviz_common::properties::EnumProperty(
+    "VerticalAlignment", "TOP", "Vertical Alignment", this, SLOT(updateVerticalAlignment()));
+  mpVerticalAlignmentProperty->addOption("TOP", (int)VerticalAlignment::TOP);
+  mpVerticalAlignmentProperty->addOption("CENTER", (int)VerticalAlignment::CENTER);
+  mpVerticalAlignmentProperty->addOption("BOTTOM", (int)VerticalAlignment::BOTTOM);
   size_property_ = new rviz_common::properties::IntProperty(
     "size", 128, "size of the widget", this, SLOT(updateSize()));
   size_property_->setMin(1);
@@ -81,6 +95,13 @@ OverlayDiagnosticDisplay::OverlayDiagnosticDisplay()
   stall_duration_property_->setMin(0.0);
   name_property_ = new rviz_common::properties::StringProperty(
     "name", "no name", "name", this, SLOT(updateName()));
+
+  updateHorizontalDistance();
+  updateVerticalDistance();
+  updateHorizontalAlignment();
+  updateVerticalAlignment();
+  left_ = mHorizontalDistance;
+  top_ = mVerticalDistance;
 }
 
 void OverlayDiagnosticDisplay::speakText(const std::string &text)
@@ -107,10 +128,13 @@ OverlayDiagnosticDisplay::~OverlayDiagnosticDisplay()
   // panel_material_->unload();
   // Ogre::MaterialManager::getSingleton().remove(panel_material_->getName());
   delete diagnostics_namespace_property_;
-  delete top_property_;
-  delete left_property_;
+  delete mpHorizontalDistanceProperty;
+  delete mpVerticalDistanceProperty;
+  delete mpHorizontalAlignmentProperty;
+  delete mpVerticalAlignmentProperty;
   delete alpha_property_;
   delete size_property_;
+  delete stall_duration_property_;
   delete type_property_;
   delete name_property_;
 }
@@ -200,7 +224,7 @@ void OverlayDiagnosticDisplay::update(float wall_dt, float ros_dt)
   overlay_->updateTextureSize(size_, size_);
   redraw();
   overlay_->setDimensions(overlay_->getTextureWidth(), overlay_->getTextureHeight());
-  overlay_->setPosition(left_, top_);
+  overlay_->setPosition(mHorizontalDistance, mVerticalDistance, mHorizontalAlignment, mVerticalAlignment);
   t_ = fmod(t_, overlay_diagnostic_animation_duration);
 }
 
@@ -239,7 +263,7 @@ void OverlayDiagnosticDisplay::onDisable()
 
 void OverlayDiagnosticDisplay::onInitialize()
 {
-  overlay_->prepareOverlays(scene_manager_);
+  rviz_rendering::RenderSystem::get()->prepareOverlays(scene_manager_);
   RTDClass::onInitialize();
 
   JSK_LOG_DEBUG("onInitialize");
@@ -247,8 +271,10 @@ void OverlayDiagnosticDisplay::onInitialize()
   updateDiagnosticsNamespace();
   updateSize();
   updateAlpha();
-  updateLeft();
-  updateTop();
+  updateHorizontalDistance();
+  updateVerticalDistance();
+  updateHorizontalAlignment();
+  updateVerticalAlignment();
   updateStallDuration();
   updateRosTopic();
   updateName();
@@ -608,9 +634,25 @@ void OverlayDiagnosticDisplay::updateSize() { size_ = size_property_->getInt(); 
 
 void OverlayDiagnosticDisplay::updateAlpha() { alpha_ = alpha_property_->getFloat(); }
 
-void OverlayDiagnosticDisplay::updateTop() { top_ = top_property_->getInt(); }
+void OverlayDiagnosticDisplay::updateHorizontalDistance()
+{
+  mHorizontalDistance = mpHorizontalDistanceProperty->getInt();
+}
 
-void OverlayDiagnosticDisplay::updateLeft() { left_ = left_property_->getInt(); }
+void OverlayDiagnosticDisplay::updateVerticalDistance()
+{
+  mVerticalDistance = mpVerticalDistanceProperty->getInt();
+}
+
+void OverlayDiagnosticDisplay::updateHorizontalAlignment()
+{
+  mHorizontalAlignment = (HorizontalAlignment)mpHorizontalAlignmentProperty->getOptionInt();
+}
+
+void OverlayDiagnosticDisplay::updateVerticalAlignment()
+{
+  mVerticalAlignment = (VerticalAlignment)mpVerticalAlignmentProperty->getOptionInt();
+}
 
 void OverlayDiagnosticDisplay::updateStallDuration()
 {
@@ -626,14 +668,20 @@ bool OverlayDiagnosticDisplay::isInRegion(int x, int y)
 
 void OverlayDiagnosticDisplay::movePosition(int x, int y)
 {
-  top_ = y;
+  mHorizontalAlignment = HorizontalAlignment::LEFT;
+  mVerticalAlignment = VerticalAlignment::TOP;
+  mHorizontalDistance = x;
+  mVerticalDistance = y;
   left_ = x;
+  top_ = y;
 }
 
 void OverlayDiagnosticDisplay::setPosition(int x, int y)
 {
-  top_property_->setValue(y);
-  left_property_->setValue(x);
+  mpHorizontalAlignmentProperty->setStringStd("LEFT");
+  mpVerticalAlignmentProperty->setStringStd("TOP");
+  mpHorizontalDistanceProperty->setValue(x);
+  mpVerticalDistanceProperty->setValue(y);
 }
 
 void OverlayDiagnosticDisplay::updateType() { type_ = type_property_->getOptionInt(); }

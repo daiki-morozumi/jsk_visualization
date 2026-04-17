@@ -69,6 +69,20 @@ namespace jsk_rviz_plugins
 {
 class OverlayObject;
 
+enum class VerticalAlignment
+{
+  CENTER,
+  TOP,
+  BOTTOM
+};
+
+enum class HorizontalAlignment
+{
+  LEFT,
+  RIGHT,
+  CENTER
+};
+
 class ScopedPixelBuffer
 {
 public:
@@ -106,6 +120,10 @@ public:
   virtual void updateTextureSize(unsigned int width, unsigned int height);
   virtual ScopedPixelBuffer getBuffer();
   virtual void setPosition(double left, double top);
+  virtual void setPosition(
+    double horizontal_distance, double vertical_distance,
+    HorizontalAlignment horizontal_alignment,
+    VerticalAlignment vertical_alignment);
   virtual void setDimensions(double width, double height);
   virtual bool isVisible();
   virtual unsigned int getTextureWidth();
